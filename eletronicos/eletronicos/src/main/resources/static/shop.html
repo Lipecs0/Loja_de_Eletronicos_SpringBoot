@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loja — Comprar Eletrônicos</title>
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+    }
+    header {
+      background: #1e293b;
+      color: white;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #cartCount {
+      background: #ef4444;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 16px;
+    }
+    .grid-produtos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    
+    
+    .produto-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+    
+    .produto-card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 18px;
+        width: 280px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        font-family: "Inter", Arial, sans-serif;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .preco {
+        font-size: 24px !important;      /* deixa grande */
+        font-weight: 700 !important;     /* super negrito */
+        color: black !important;         /* força preto */
+        background: #fff700 !important;  /* fundo amarelo forte (tipo etiqueta) */
+        padding: 8px 14px !important;    /* respiro interno */
+        border-radius: 6px !important;
+        display: inline-block !important;
+        margin: 10px 0 16px !important;
+        border: 2px solid black
+    }
+    button.add-cart {
+      background: #2563eb;
+      color: white;
+      border:0;
+      padding:10px;
+      border-radius:8px;
+      cursor:pointer;
+    }
+    button.add-cart:disabled {
+      background:#ccc; cursor:not-allowed;
+    }
+    /* Carrinho */
+    #cartModal {
+      position: fixed;
+      top:0; right:0;
+      width: 320px;
+      height:100%;
+      background:#fff;
+      box-shadow: -3px 0 12px rgba(0,0,0,0.1);
+      transform: translateX(100%);
+      transition: 0.3s;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+    }
+    #cartModal.open { transform:translateX(0) }
+    #cartItems { flex:1;overflow-y:auto;margin-bottom:10px }
+    .cart-item {
+      display:flex;justify-content:space-between;
+      padding:8px 0;border-bottom:1px solid #eee;font-size:14px
+    }
+    #totalCompra {
+      font-size:16px;font-weight:600;margin-bottom:12px;
+    }
+    #btnCheckout {
+      background:#16a34a;color:white;
+      padding:12px;border:0;border-radius:8px;cursor:pointer;
+      font-weight:600;
+    }
+    #btnCloseCart {
+      background:#6b7280;color:white;padding:10px;border:0;border-radius:6px;cursor:pointer;margin-bottom:12px;
+    }
+    .shop-img-wrapper {
+        width: 120px;        /* quadrado */
+        height: 120px;       /* quadrado */
+        background: #f8fafc;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    .shop-produto-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 8px;
+    }
+    .produto-card h3 {
+        font-size: 19px;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 8px;
+        line-height: 1.3;
+        min-height: 46px;
+    }
+    .produto-card .preco {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+    .produtos-shop {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        padding: 16px;
+    }
+    .btn-carrinho {
+        width: 200px;
+        background: #2563eb;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        padding: 10px 0;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        margin-top: 14px;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>🛍️ Loja Eletrônicos</h1>
+  <div style="display:flex;gap:12px;align-items:center">
+    <button onclick="toggleCart()" style="background:none;border:0;color:white;font-size:16px;cursor:pointer">🛒 Carrinho</button>
+    <div id="cartCount">0</div>
+  </div>
+</header>
+
+<div class="container">
+  <h2>Produtos</h2>
+  <div id="produtos" class="grid-produtos"></div>
+</div>
+
+<aside id="cartModal">
+  <button id="btnCloseCart" onclick="toggleCart()">Fechar</button>
+  <h3>Carrinho</h3>
+  <div id="cartItems"></div>
+  <div id="totalCompra">Total: R$ 0.00</div>
+  <button id="btnCheckout" onclick="checkout()">Finalizar Compra</button>
+</aside>
+
+<script>
+  const API_BASE = "/api/produtos";
+  const API_COMPRA = "/api/compras";
+  let cart = [];
+
+  function toggleCart() {
+    document.getElementById("cartModal").classList.toggle("open");
+  }
+
+  function updateCartUI() {
+    const count = document.getElementById("cartCount");
+    const items = document.getElementById("cartItems");
+    const total = document.getElementById("totalCompra");
+
+    count.textContent = cart.length;
+
+    if (cart.length === 0) {
+      items.innerHTML = "<p>Seu carrinho está vazio</p>";
+      total.textContent = "Total: R$ 0.00";
+      return;
+    }
+
+    let totalCompra = 0;
+    items.innerHTML = cart.map((item, i) => {
+      totalCompra += item.preco;
+      return `
+        <div class="cart-item">
+          <span>${item.nome}</span>
+          <span>R$ ${item.preco.toFixed(2)}</span>
+          <button onclick="removeCart(${i})">X</button>
+        </div>`;
+    }).join("");
+
+    total.textContent = `Total: R$ ${totalCompra.toFixed(2)}`;
+  }
+
+  function removeCart(i) {
+    cart.splice(i, 1);
+    updateCartUI();
+  }
+
+  async function checkout() {
+    const payload = {
+      produtosIds: cart.map(item => item.id)
+    };
+
+    try {
+      const res = await fetch(API_COMPRA, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      alert("✅ Compra concluída!");
+      cart = [];
+      updateCartUI();
+      loadProdutos();
+
+    } catch(e) {
+      alert("Erro ao finalizar compra: " + e.message);
+      console.error(e);
+    }
+  }
+
+  async function loadProdutos() {
+    const container = document.getElementById("produtos");
+    container.innerHTML = "<p>Carregando...</p>";
+
+    try {
+      const res = await fetch(API_BASE);
+      if (!res.ok) throw new Error("Falha na API");
+      const produtos = await res.json();
+
+      container.innerHTML = produtos.map(p => `
+        <div class="produto-card">
+          <div class="shop-img-wrapper">
+            <img class="shop-produto-img"
+                src="${p.imagemUrl}"
+                onerror="this.src='https://via.placeholder.com/150'"
+                alt="${p.nome}">
+            </div>
+            <h3>${p.nome}</h3>
+            <p>${p.descricao || ""}</p>
+             <p class="preco">R$ ${p.preco.toFixed(2)}</p>
+            <div>${p.estoque > 0 ? "Estoque: " + p.estoque : "❌ Sem estoque"}</div>
+          </div>
+          <button class="add-cart" ${p.estoque <= 0 ? "disabled" : ""} onclick='addCart(${JSON.stringify(p)})'>
+            ${p.estoque > 0 ? "Adicionar ao Carrinho" : "Indisponível"}
+          </button>
+        </div>
+      `).join("");
+
+    } catch(e) {
+      container.innerHTML = "<p style='color:red'>Erro ao carregar produtos</p>";
+      console.error(e);
+    }
+  }
+
+  function addCart(produto) {
+    cart.push({
+      id: produto.id,
+      nome: produto.nome,
+      preco: produto.preco
+    });
+    updateCartUI();
+  }
+
+  loadProdutos();
+</script>
+
+</body>
+</html>
